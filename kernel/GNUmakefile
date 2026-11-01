@@ -13,7 +13,7 @@ PREFIX := /usr/local
 
 # User controllable toolchain and toolchain prefix.
 TOOLCHAIN :=
-TOOLCHAIN_PREFIX :=
+TOOLCHAIN_PREFIX := x86_64-elf-
 ifneq ($(TOOLCHAIN),)
     ifeq ($(TOOLCHAIN_PREFIX),)
         TOOLCHAIN_PREFIX := $(TOOLCHAIN)-
@@ -88,7 +88,7 @@ override LD_HAS_FLAG = $(shell ! LC_ALL=C $(CC) $(CFLAGS) $(LDFLAGS) -Wl,--help 
 override CFLAGS += \
     -Wall \
     -Wextra \
-    -std=gnu11 \
+    -std=gnu23 \
     -ffreestanding \
     -fno-exceptions \
     -fno-common \
@@ -108,6 +108,7 @@ override CFLAGS += \
 override CPPFLAGS := \
     -nostdinc \
     -I src \
+    -I src/included \
     -I limine-protocol/include \
     -isystem freestanding-c-hdrs/include \
     $(CPPFLAGS) \
@@ -264,7 +265,11 @@ override HEADER_DEPS := $(addprefix obj/,$(CFILES:.c=.c.d) $(ASFILES:.S=.S.d) $(
 
 # Default target. This must come first, before header dependencies.
 .PHONY: all
-all: bin/$(OUTPUT)
+all: bin/$(OUTPUT) compile_commands.json
+
+.PHONY: compile_commands.json
+compile_commands.json:
+	python3 ../scripts/compile_commands.py $@ $(MAKE) --no-print-directory -B -n bin/$(OUTPUT)
 
 # Include header dependencies.
 -include $(HEADER_DEPS)
@@ -296,6 +301,8 @@ bin/$(OUTPUT): GNUmakefile obj/CC obj/CFLAGS obj/LDFLAGS linker-scripts/x86_64.l
 obj/src/memory.c.o obj/freestanding-lgrt/src/freestanding-lgrt.c.o: override CFLAGS += -fno-lto
 
 # Compilation rules for *.c files.
+obj/src/%.c.o: override CPPFLAGS += -include src/included/prelude.h
+
 obj/%.c.o: %.c GNUmakefile obj/CC obj/CFLAGS obj/CPPFLAGS
 	mkdir -p "$(dir $@)"
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
@@ -313,7 +320,7 @@ obj/%.asm.o: %.asm GNUmakefile obj/NASMFLAGS
 # Remove object files and the final executable.
 .PHONY: clean
 clean:
-	rm -rf bin obj
+	rm -rf bin obj compile_commands.json
 
 # Remove everything built and generated including downloaded dependencies.
 .PHONY: distclean

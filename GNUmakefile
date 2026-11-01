@@ -4,8 +4,12 @@
 # Delete the target of a failed recipe.
 .DELETE_ON_ERROR:
 
-# Default user QEMU flags. These are appended to the QEMU command calls.
-QEMUFLAGS := -m 2G
+GDB_SCRIPT := build/gdbinit
+GDB := gdb
+GDB_HOST := localhost
+GDB_PORT := 1234
+QEMUDEBUGFLAGS := -s -S
+QEMUFLAGS := -m 2G -serial mon:stdio
 QEMU_MACHINE := -M q35
 QEMU_CPU :=
 # Uncomment this line and comment out/remove the xHCI/USB keyboard/mouse
@@ -25,7 +29,7 @@ override QEMUFLAGS := \
 override QEMU_UEFI_FW := \
     -drive if=pflash,unit=0,format=raw,file=edk2-ovmf-bins/ovmf-code-x86_64.fd,readonly=on
 
-override IMAGE_NAME := template
+override IMAGE_NAME := whirliscope
 
 # User controllable size of the HDD image, in MiB.
 HDD_SIZE := 64
@@ -63,6 +67,20 @@ run: $(IMAGE_NAME).iso
 		-cdrom $(IMAGE_NAME).iso \
 		-boot d \
 		$(QEMUFLAGS)
+
+.PHONY: debug
+debug: $(IMAGE_NAME).iso
+	qemu-system-x86_64 \
+		$(QEMU_MACHINE_FLAGS) \
+		-cdrom $(IMAGE_NAME).iso \
+		-boot d \
+		$(QEMUFLAGS) \
+		$(QEMUDEBUGFLAGS)
+
+.PHONY: gdb
+gdb: $(GDB_SCRIPT)
+	command -v "$(GDB)" >/dev/null || { echo "error: gdb is required for 'make gdb'." >&2; exit 127; }
+	$(GDB) -x "$(GDB_SCRIPT)"
 
 .PHONY: run-uefi
 run-uefi: edk2-ovmf-bins $(IMAGE_NAME).iso
@@ -131,6 +149,7 @@ kernel/.deps-obtained:
 .PHONY: kernel
 kernel: kernel/.deps-obtained
 	$(MAKE) -C kernel
+	cp kernel/compile_commands.json compile_commands.json
 
 $(IMAGE_NAME).iso: limine-binary/limine kernel
 	rm -rf iso_root
@@ -161,10 +180,21 @@ $(IMAGE_NAME).hdd: limine-binary/limine kernel
 	mcopy -i $(IMAGE_NAME).hdd@@$(HDD_PART_OFFSET) limine-binary/BOOTX64.EFI ::/EFI/BOOT
 	mcopy -i $(IMAGE_NAME).hdd@@$(HDD_PART_OFFSET) limine-binary/BOOTIA32.EFI ::/EFI/BOOT
 
+$(GDB_SCRIPT): GNUmakefile kernel
+	mkdir -p "$(dir $@)"
+	printf '%s\n' \
+	    'file kernel/bin/kernel' \
+	    'set architecture i386:x86-64' \
+	    'break kmain' \
+	    'break breakpoint' \
+	    'target remote $(GDB_HOST):$(GDB_PORT)' \
+	    'continue' \
+	    > "$@"
+
 .PHONY: clean
 clean:
 	$(MAKE) -C kernel clean
-	rm -rf iso_root $(IMAGE_NAME).iso $(IMAGE_NAME).hdd
+	rm -rf iso_root $(IMAGE_NAME).iso $(IMAGE_NAME).hdd "$(GDB_SCRIPT)" compile_commands.json
 
 .PHONY: distclean
 distclean: clean

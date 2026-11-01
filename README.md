@@ -38,6 +38,8 @@ Link-time optimisation can be enabled by adding `-flto` to `CFLAGS`, for example
 make CFLAGS='-g -O2 -pipe -flto'
 ```
 
+Your toolchain must support C23.
+
 ### Makefile targets
 
 Running `make all` will compile the kernel (from the `kernel/` directory) and then generate a bootable ISO image.

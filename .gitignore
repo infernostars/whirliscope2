@@ -5,3 +5,5 @@
 /iso_root
 *.iso
 *.hdd
+/compile_commands.json
+.idea/*

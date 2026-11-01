@@ -1,0 +1,6 @@
+file kernel/bin/kernel
+set architecture i386:x86-64
+break kmain
+break breakpoint
+target remote localhost:1234
+continue
