@@ -1,12 +1,10 @@
-#include "format.h"
-
 void prepare(char string[]) {
     string[0] = '0';
     string[1] = 'x';
 }
 
 
-char* format_uptr(uptr ptr, char string[]) {
+public char* format_uptr(uptr ptr, char string[]) {
     prepare(string);
 
     constexpr char hex_chars[] = "0123456789abcdef";
@@ -21,7 +19,7 @@ char* format_uptr(uptr ptr, char string[]) {
     return string;
 }
 
-char* format_u64(u64 a, char string[]) {
+public char* format_u64(u64 a, char string[]) {
     prepare(string);
 
     constexpr char hex_chars[] = "0123456789abcdef";

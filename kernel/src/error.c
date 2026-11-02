@@ -11,7 +11,7 @@ noreturn static void hcf() {
     }
 }
 
-noreturn void _panic(const char* str, const char* file, const char* line, const char* func) {
+public noreturn void _panic(const char* str, const char* file, const char* line, const char* func) {
     write_serial_string("\n\n---<<< KERNEL PANIC: ");
     write_serial_string(str);
     write_serial_string(" >>>---\n\nfile: ");

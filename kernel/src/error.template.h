@@ -1,6 +1,6 @@
 #pragma once
 
-noreturn void _panic(const char* str, const char* file, const char* line, const char* func);
+/*** @public ***/
 
 #define STR(x) #x
 #define XSTR(x) STR(x)

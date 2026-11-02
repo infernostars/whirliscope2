@@ -262,14 +262,39 @@ override ASFILES := $(filter %.S,$(SRCFILES))
 override NASMFILES := $(filter %.asm,$(SRCFILES))
 override OBJ := $(addprefix obj/,$(CFILES:.c=.c.o) $(ASFILES:.S=.S.o) $(NASMFILES:.asm=.asm.o))
 override HEADER_DEPS := $(addprefix obj/,$(CFILES:.c=.c.d) $(ASFILES:.S=.S.d) $(NASMFILES:.asm=.asm.d))
+override HEADER_INPUTS := $(filter src/%.c src/%.template.h,$(SRCFILES))
+override HEADER_BASES := $(sort $(patsubst %.c,%,$(filter %.c,$(HEADER_INPUTS))) $(patsubst %.template.h,%,$(filter %.template.h,$(HEADER_INPUTS))))
+override AUTO_HEADERS := $(addsuffix .h,$(HEADER_BASES))
+override AUTO_HEADER_STAMPS := $(patsubst src/%,obj/auto-headers/%.stamp,$(HEADER_BASES))
 
 # Default target. This must come first, before header dependencies.
 .PHONY: all
 all: bin/$(OUTPUT) compile_commands.json
 
 .PHONY: compile_commands.json
-compile_commands.json:
+compile_commands.json: | headers
 	python3 ../scripts/compile_commands.py $@ $(MAKE) --no-print-directory -B -n bin/$(OUTPUT)
+
+# Another translation unit may include a generated header before compiler
+# dependency files exist, so all headers must precede all compilation.
+.PHONY: headers
+headers: $(AUTO_HEADER_STAMPS)
+
+# Track sources with no exports too, without creating empty headers or
+# rechecking those sources on every build.
+$(foreach base,$(HEADER_BASES),$(eval $(patsubst src/%,obj/auto-headers/%.stamp,$(base)): $(wildcard $(base).c $(base).template.h)))
+
+# Recording the input list also detects added or removed optional templates.
+obj/auto-headers/%.stamp: ../scripts/auto_headers.py GNUmakefile obj/HEADER_INPUTS
+	@mkdir -p "$(dir $@)"
+	python3 ../scripts/auto_headers.py src/$*.c src/$*.h
+	@touch $@
+
+# Recover a deleted header referenced by a compiler dependency file.
+$(AUTO_HEADERS): src/%.h: obj/auto-headers/%.stamp
+	@test -f $@ || python3 ../scripts/auto_headers.py src/$*.c $@
+
+$(OBJ): | headers
 
 # Include header dependencies.
 -include $(HEADER_DEPS)
@@ -278,7 +303,7 @@ compile_commands.json:
 # named after them. Each record gets its variable as set here, as target
 # specific values, like the -fno-lto below, would otherwise reach it
 # through the files depending on it.
-override VARSFILES := $(addprefix obj/,CC CFLAGS CPPFLAGS LDFLAGS NASMFLAGS)
+override VARSFILES := $(addprefix obj/,CC CFLAGS CPPFLAGS LDFLAGS NASMFLAGS HEADER_INPUTS)
 $(foreach f,$(VARSFILES),$(eval $(f): override $(notdir $(f)) := $$($(notdir $(f)))))
 
 # Remake the records that differ, compared here rather than by a recipe run
@@ -321,6 +346,7 @@ obj/%.asm.o: %.asm GNUmakefile obj/NASMFLAGS
 .PHONY: clean
 clean:
 	rm -rf bin obj compile_commands.json
+	python3 ../scripts/auto_headers.py --clean $(AUTO_HEADERS) $(patsubst %.h,%.auto.h,$(AUTO_HEADERS))
 
 # Remove everything built and generated including downloaded dependencies.
 .PHONY: distclean

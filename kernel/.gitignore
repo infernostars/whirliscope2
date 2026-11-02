@@ -6,3 +6,8 @@
 /limine-protocol
 /bin
 /obj
+
+*.h
+!*.template.h
+!/src/included/*.h
+!/src/generated/*.h

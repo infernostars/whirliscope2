@@ -7,7 +7,7 @@
 #include "serial.h"
 #include "io.h"
 
-bool init_serial() {
+public bool init_serial() {
     outb(PORT + 1, 0x00);    // Disable all interrupts
     outb(PORT + 3, 0x80);    // Enable DLAB to set baud rate divisor
     outb(PORT + 0, 0x01);    // Set divisor to 1 (lo byte) 115200 baud
@@ -29,27 +29,27 @@ bool init_serial() {
     return true;
 }
 
-bool serial_received() {
+public bool serial_received() {
     return inb(PORT + 5) & 1;
 }
 
-u8 read_serial() {
+public u8 read_serial() {
     while (serial_received() == 0) {}
 
     return inb(PORT);
 }
 
-bool is_transmit_empty() {
+public bool is_transmit_empty() {
     return inb(PORT + 5) & 0x20;
 }
 
-void write_serial(u8 a) {
+public void write_serial(u8 a) {
     while (is_transmit_empty() == 0) {}
 
     outb(PORT, a);
 }
 
-void write_serial_string(const char* a) {
+public void write_serial_string(const char* a) {
     const char *ptr = a;
 
     while (*ptr != '\0') {

@@ -7,3 +7,4 @@
 *.hdd
 /compile_commands.json
 .idea/*
+__pycache__/

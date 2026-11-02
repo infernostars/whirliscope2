@@ -81,6 +81,8 @@ noreturn void kmain(void) {
 
     write_serial_string(v);
 
+    __asm__("ud2");
+
     // Ok time to die
     kassert(false, "nothing to do");
 }

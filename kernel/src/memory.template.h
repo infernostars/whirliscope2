@@ -1,11 +1,6 @@
 #pragma once
 
-#include <stddef.h>
-
-void *memcpy(void *restrict dest, const void *restrict src, usize n);
-void *memset(void *s, int c, usize n);
-void *memmove(void *dest, const void *src, usize n);
-int memcmp(const void *s1, const void *s2, usize n);
+/*** @public ***/
 
 // Make uses of these functions go through the compiler builtins, which the
 // compiler can optimise (e.g. inline) even when building freestanding code,

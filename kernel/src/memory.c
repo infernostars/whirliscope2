@@ -1,5 +1,3 @@
-#include <stdint.h>
-#include <stddef.h>
 #include <memory.h>
 
 // GCC and Clang reserve the right to generate calls to the following
@@ -10,7 +8,7 @@
 #ifdef memcpy
 #  undef memcpy
 #endif
-void *memcpy(void *restrict dest, const void *restrict src, usize n) {
+public void *memcpy(void *restrict dest, const void *restrict src, usize n) {
     u8 *pdest = dest;
     const u8 *psrc = src;
 
@@ -24,7 +22,7 @@ void *memcpy(void *restrict dest, const void *restrict src, usize n) {
 #ifdef memset
 #  undef memset
 #endif
-void *memset(void *s, int c, usize n) {
+public void *memset(void *s, int c, usize n) {
     u8 *p = s;
 
     for (usize i = 0; i < n; i++) {
@@ -37,15 +35,15 @@ void *memset(void *s, int c, usize n) {
 #ifdef memmove
 #  undef memmove
 #endif
-void *memmove(void *dest, const void *src, usize n) {
+public void *memmove(void *dest, const void *src, usize n) {
     u8 *pdest = dest;
     const u8 *psrc = src;
 
-    if ((uintptr_t)src > (uintptr_t)dest) {
+    if ((uptr)src > (uptr)dest) {
         for (usize i = 0; i < n; i++) {
             pdest[i] = psrc[i];
         }
-    } else if ((uintptr_t)src < (uintptr_t)dest) {
+    } else if ((uptr)src < (uptr)dest) {
         for (usize i = n; i > 0; i--) {
             pdest[i-1] = psrc[i-1];
         }
@@ -57,7 +55,7 @@ void *memmove(void *dest, const void *src, usize n) {
 #ifdef memcmp
 #  undef memcmp
 #endif
-int memcmp(const void *s1, const void *s2, usize n) {
+public int memcmp(const void *s1, const void *s2, usize n) {
     const u8 *p1 = s1;
     const u8 *p2 = s2;
 
